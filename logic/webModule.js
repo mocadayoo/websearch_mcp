@@ -44,3 +44,5 @@ async function fetchWebsite(url) {
     await browser.close();
     return content;
 }
+
+export { duckduckSearch, fetchWebsite };
