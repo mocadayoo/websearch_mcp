@@ -4,7 +4,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "node index.js"
+    "dev": "node index.js",
+    "debug": "npx @modelcontextprotocol/inspector node --experimental-require-module index.js",
+    "playwrightinstall": "npx playwright install"
   },
   "author": "",
   "license": "ISC",
