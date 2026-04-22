@@ -1,0 +1,78 @@
+import { z } from 'zod';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+
+import { log } from './Utils/logger.js';
+import { duckduckSearch, fetchWebsite } from './logic/webModule.js';
+
+log('starting mcp server...');
+const server = new Server({
+    name: "websearch_mcp",
+    version: "1.0.0"
+}, {
+    capabilities: {
+        tools: {}
+    }
+});
+
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+    log('received toollist request');
+    return {
+        tools: [
+            {
+                name: 'duckduckSearch',
+                description: 'Search using DuckDuckGo',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        query: { type: 'string', description: 'The search query' }
+                    },
+                    required: ['query']
+                }
+            },
+            {
+                name: 'fetchWebsite',
+                description: 'Fetch the content of a website',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        url: { type: 'string', description: 'The URL of the website to fetch' }
+                    },
+                    required: ['url']
+                }
+            }
+        ]
+    };
+});
+
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    log('received tool call request: ' + request.params.name);
+    if (request.params.name === 'duckduckSearch') {
+        const result = await duckduckSearch(request.params.arguments.query);
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: JSON.stringify(result, null, 2)
+                }
+            ]
+        };
+    } else if (request.params.name === 'fetchWebsite') {
+        const result = await fetchWebsite(request.params.arguments.url);
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: result
+                }
+            ]
+        };
+    }
+    throw new Error(`unknown tool: ${request.params.name}`);
+});
+
+const transport = new StdioServerTransport();
+log('starting server...');
+await server.connect(transport);
+log('server is ready!');

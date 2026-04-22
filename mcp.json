@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "WEB_MCP": {
+      "command": "node",
+      "args": [
+        "path/websearch_mcp/index.js"
+      ]
+    }
+  }
+}
