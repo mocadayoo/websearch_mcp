@@ -33,11 +33,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: 'websiteReader',
-                description: 'Fetch and extract the main content of a website',
+                description: 'Fetch and extract the main content of a website (recommend)',
                 inputSchema: {
                     type: 'object',
                     properties: {
-                        url: { type: 'string', description: 'The URL of the website to read' }
+                        url: { type: 'string', description: 'The URL of the website to reader' }
                     },
                     required: ['url']
                 }
