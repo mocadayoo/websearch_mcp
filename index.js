@@ -1,114 +1,155 @@
-import { z } from 'zod';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { z } from "zod";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+    CallToolRequestSchema,
+    ListToolsRequestSchema,
+} from "@modelcontextprotocol/sdk/types.js";
 
-import { log } from './Utils/logger.js';
-import { duckduckSearch, websiteReader, fetchWebsite } from './logic/webModule.js';
+import { log } from "./Utils/logger.js";
+import {
+    duckduckSearch,
+    fetchWebsite,
+    websiteReader,
+} from "./logic/webModule.js";
 
-log('starting mcp server...');
+log("starting mcp server...");
 const server = new Server({
     name: "websearch_mcp",
-    version: "1.0.0"
+    version: "1.0.0",
 }, {
     capabilities: {
-        tools: {}
-    }
+        tools: {},
+    },
 });
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-    log('received toollist request');
+    log("received toollist request");
     return {
         tools: [
             {
-                name: 'duckduckSearch',
-                description: 'Search using DuckDuckGo',
+                name: "duckduckSearch",
+                description: "Search using DuckDuckGo",
                 inputSchema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
-                        query: { type: 'string', description: 'The search query' }
+                        query: {
+                            type: "string",
+                            description: "The search query",
+                        },
                     },
-                    required: ['query']
-                }
+                    required: ["query"],
+                },
             },
             {
-                name: 'websiteReader',
-                description: 'Fetch and extract the main content of a website (recommend)',
+                name: "websiteReader",
+                description:
+                    "Fetch and extract the main content of a website (recommend)",
                 inputSchema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
-                        url: { type: 'string', description: 'The URL of the website to reader' }
+                        url: {
+                            type: "string",
+                            description: "The URL of the website to reader",
+                        },
                     },
-                    required: ['url']
-                }
+                    required: ["url"],
+                },
             },
             {
-                name: 'fetchWebsite',
-                description: 'Fetch the content of a website (full html)',
+                name: "fetchWebsite",
+                description: "Fetch the content of a website (full html)",
                 inputSchema: {
-                    type: 'object',
+                    type: "object",
                     properties: {
-                        url: { type: 'string', description: 'The URL of the website to fetch' }
+                        url: {
+                            type: "string",
+                            description: "The URL of the website to fetch",
+                        },
                     },
-                    required: ['url']
-                }
+                    required: ["url"],
+                },
             },
-        ]
+        ],
     };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    log('received tool call request: ' + request.params.name);
+    log("received tool call request: " + request.params.name);
     try {
-        if (request.params.name === 'duckduckSearch') {
+        if (request.params.url) {
+            if (
+                !request.params.url.startsWith("http://") &&
+                !request.params.url.startsWith("https://")
+            ) {
+                throw new Error(
+                    "Invalid URL: must start with http:// or https://",
+                );
+            } else {
+                const urlObj = new URL(request.params.url);
+                const hostname = urlObj.hostname;
+                if (
+                    hostname === "localhost" || hostname === "127.0.0.1" ||
+                    hostname === "::1" || hostname.startsWith("192.168.") ||
+                    hostname.startsWith("10.") || hostname.startsWith("172.16.")
+                ) {
+                    throw new Error(
+                        "Invalid URL: local addresses are not allowed",
+                    );
+                }
+            }
+        }
+
+        if (request.params.name === "duckduckSearch") {
             const result = await duckduckSearch(request.params.arguments.query);
             return {
                 content: [
                     {
-                        type: 'text',
-                        text: JSON.stringify(result, null, 2)
-                    }
-                ], isError: false
+                        type: "text",
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+                isError: false,
             };
-        } else if (request.params.name === 'websiteReader') {
+        } else if (request.params.name === "websiteReader") {
             const result = await websiteReader(request.params.arguments.url);
             return {
                 content: [
                     {
-                        type: 'text',
-                        text: JSON.stringify(result, null, 2)
-                    }
+                        type: "text",
+                        text: JSON.stringify(result, null, 2),
+                    },
                 ],
-                isError: false
+                isError: false,
             };
-        } else if (request.params.name === 'fetchWebsite') {
+        } else if (request.params.name === "fetchWebsite") {
             const result = await fetchWebsite(request.params.arguments.url);
             return {
                 content: [
                     {
-                        type: 'text',
-                        text: result
-                    }
+                        type: "text",
+                        text: result,
+                    },
                 ],
-                isError: false
+                isError: false,
             };
         }
         throw new Error(`unknown tool: ${request.params.name}`);
     } catch (error) {
-        log('error in tool call: ' + error.message);
+        log("error in tool call: " + error.message);
         return {
             content: [
                 {
-                    type: 'text',
-                    text: `Error: ${error.message}`
-                }
+                    type: "text",
+                    text: `Error: ${error.message}`,
+                },
             ],
-            isError: true
+            isError: true,
         };
     }
 });
 
 const transport = new StdioServerTransport();
-log('starting server...');
+log("starting server...");
 await server.connect(transport);
-log('server is ready!');
+log("server is ready!");
