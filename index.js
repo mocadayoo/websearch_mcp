@@ -4,7 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { log } from './Utils/logger.js';
-import { duckduckSearch, fetchWebsite } from './logic/webModule.js';
+import { duckduckSearch, websiteReader, fetchWebsite } from './logic/webModule.js';
 
 log('starting mcp server...');
 const server = new Server({
@@ -32,8 +32,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 }
             },
             {
+                name: 'websiteReader',
+                description: 'Fetch and extract the main content of a website',
+                inputSchema: {
+                    type: 'object',
+                    properties: {
+                        url: { type: 'string', description: 'The URL of the website to read' }
+                    },
+                    required: ['url']
+                }
+            },
+            {
                 name: 'fetchWebsite',
-                description: 'Fetch the content of a website',
+                description: 'Fetch the content of a website (full html)',
                 inputSchema: {
                     type: 'object',
                     properties: {
@@ -41,7 +52,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     },
                     required: ['url']
                 }
-            }
+            },
         ]
     };
 });
@@ -58,6 +69,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         text: JSON.stringify(result, null, 2)
                     }
                 ], isError: false
+            };
+        } else if (request.params.name === 'websiteReader') {
+            const result = await websiteReader(request.params.arguments.url);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2)
+                    }
+                ],
+                isError: false
             };
         } else if (request.params.name === 'fetchWebsite') {
             const result = await fetchWebsite(request.params.arguments.url);

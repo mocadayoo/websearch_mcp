@@ -1,4 +1,8 @@
 import { chromium } from 'playwright';
+import pkgReadability from '@mozilla/readability';
+const { Readability } = pkgReadability;
+import isdomPkg from 'jsdom';
+const { JSDOM } = isdomPkg;
 
 async function duckduckSearch(query) {
     query = encodeURIComponent(query);
@@ -34,6 +38,17 @@ async function duckduckSearch(query) {
     return search_results;
 };
 
+async function websiteReader(url) {
+    const content = await fetchWebsite(url);
+    const dom = new JSDOM(content, { url });
+    const reader = new Readability(dom.window.document);
+    const article = reader.parse();
+    return {
+        title: article.title,
+        content: article.textContent
+    };
+}
+
 async function fetchWebsite(url) {
     const browser = await chromium.launch({
         args: ['--disable-blink-features=AutomationControlled'],
@@ -49,4 +64,4 @@ async function fetchWebsite(url) {
     return content;
 }
 
-export { duckduckSearch, fetchWebsite };
+export { duckduckSearch, websiteReader, fetchWebsite };
