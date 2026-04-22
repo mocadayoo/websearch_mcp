@@ -77,16 +77,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     log("received tool call request: " + request.params.name);
     try {
-        if (request.params.url) {
+        if (request.params.arguments.url) {
             if (
-                !request.params.url.startsWith("http://") &&
-                !request.params.url.startsWith("https://")
+                !request.params.arguments.url.startsWith("http://") &&
+                !request.params.arguments.url.startsWith("https://")
             ) {
                 throw new Error(
                     "Invalid URL: must start with http:// or https://",
                 );
             } else {
-                const urlObj = new URL(request.params.url);
+                const urlObj = new URL(request.params.arguments.url);
                 const hostname = urlObj.hostname;
                 if (
                     hostname === "localhost" || hostname === "127.0.0.1" ||
