@@ -10,6 +10,8 @@ import { log } from "./Utils/logger.js";
 import {
     duckduckSearch,
     fetchWebsite,
+    parallelFetchWebsite,
+    parallelWebsiteReader,
     websiteReader,
 } from "./logic/webModule.js";
 
@@ -70,34 +72,76 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ["url"],
                 },
             },
+            {
+                name: "parallelWebsiteReader",
+                description:
+                    "Fetch and extract the main content of multiple websites in parallel",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        urls: {
+                            type: "array",
+                            items: {
+                                type: "string",
+                            },
+                            description: "List of URLs to read",
+                        },
+                    },
+                    required: ["urls"],
+                },
+            },
+            {
+                name: "parallelFetchWebsite",
+                description:
+                    "Fetch the content of multiple websites in parallel",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        urls: {
+                            type: "array",
+                            items: {
+                                type: "string",
+                            },
+                            description: "List of URLs to fetch",
+                        },
+                    },
+                    required: ["urls"],
+                },
+            },
         ],
     };
 });
+
+function checkLocalAddress(url) {
+    if (
+        !url.startsWith("http://") &&
+        !url.startsWith("https://")
+    ) {
+        throw new Error(
+            "Invalid URL: must start with http:// or https://",
+        );
+    } else {
+        const urlObj = new URL(url);
+        const hostname = urlObj.hostname;
+        if (
+            hostname === "localhost" || hostname === "127.0.0.1" ||
+            hostname === "::1" || hostname.startsWith("192.168.") ||
+            hostname.startsWith("10.") || hostname.startsWith("172.16.")
+        ) {
+            throw new Error(
+                "Invalid URL: local addresses are not allowed",
+            );
+        }
+    }
+}
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     log("received tool call request: " + request.params.name);
     try {
         if (request.params.arguments.url) {
-            if (
-                !request.params.arguments.url.startsWith("http://") &&
-                !request.params.arguments.url.startsWith("https://")
-            ) {
-                throw new Error(
-                    "Invalid URL: must start with http:// or https://",
-                );
-            } else {
-                const urlObj = new URL(request.params.arguments.url);
-                const hostname = urlObj.hostname;
-                if (
-                    hostname === "localhost" || hostname === "127.0.0.1" ||
-                    hostname === "::1" || hostname.startsWith("192.168.") ||
-                    hostname.startsWith("10.") || hostname.startsWith("172.16.")
-                ) {
-                    throw new Error(
-                        "Invalid URL: local addresses are not allowed",
-                    );
-                }
-            }
+            checkLocalAddress(request.params.arguments.url);
+        } else if (request.params.arguments.urls) {
+            request.params.arguments.urls.forEach(checkLocalAddress);
         }
 
         if (request.params.name === "duckduckSearch") {
@@ -129,6 +173,32 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     {
                         type: "text",
                         text: result,
+                    },
+                ],
+                isError: false,
+            };
+        } else if (request.params.name === "parallelWebsiteReader") {
+            const result = await parallelWebsiteReader(
+                request.params.arguments.urls,
+            );
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(result, null, 2),
+                    },
+                ],
+                isError: false,
+            };
+        } else if (request.params.name === "parallelFetchWebsite") {
+            const result = await parallelFetchWebsite(
+                request.params.arguments.urls,
+            );
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(result, null, 2),
                     },
                 ],
                 isError: false,

@@ -64,4 +64,20 @@ async function fetchWebsite(url) {
     return content;
 }
 
-export { duckduckSearch, websiteReader, fetchWebsite };
+async function parallelWebsiteReader(urls) {
+    const results = [];
+    await Promise.all(urls.map(async (url) => {
+        results.push(await websiteReader(url));
+    }));
+    return results;
+}
+
+async function parallelFetchWebsite(urls) {
+    const results = [];
+    await Promise.all(urls.map(async (url) => {
+        results.push(await fetchWebsite(url));
+    }));
+    return results;
+}
+
+export { duckduckSearch, websiteReader, fetchWebsite, parallelWebsiteReader, parallelFetchWebsite };
