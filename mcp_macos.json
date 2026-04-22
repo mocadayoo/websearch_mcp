@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "WEB_MCP": {
+      "command": "/usr/local/bin/node",
+      "args": [
+        "--experimental-require-module",
+        "path/websearch_mcp/index.js"
+      ]
+    }
+  }
+}

@@ -1,10 +1,10 @@
 {
   "mcpServers": {
     "WEB_MCP": {
-      "command": "/usr/local/bin/node", // its for mac
+      "command": "C:\\Program Files\\nodejs\\node.exe",
       "args": [
         "--experimental-require-module",
-        "path/websearch_mcp/index.js"
+        "pathto\\websearch_mcp\\index.js"
       ]
     }
   }
