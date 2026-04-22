@@ -48,28 +48,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
     log('received tool call request: ' + request.params.name);
-    if (request.params.name === 'duckduckSearch') {
-        const result = await duckduckSearch(request.params.arguments.query);
+    try {
+        if (request.params.name === 'duckduckSearch') {
+            const result = await duckduckSearch(request.params.arguments.query);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: JSON.stringify(result, null, 2)
+                    }
+                ], isError: false
+            };
+        } else if (request.params.name === 'fetchWebsite') {
+            const result = await fetchWebsite(request.params.arguments.url);
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: result
+                    }
+                ],
+                isError: false
+            };
+        }
+        throw new Error(`unknown tool: ${request.params.name}`);
+    } catch (error) {
+        log('error in tool call: ' + error.message);
         return {
             content: [
                 {
                     type: 'text',
-                    text: JSON.stringify(result, null, 2)
+                    text: `Error: ${error.message}`
                 }
-            ]
-        };
-    } else if (request.params.name === 'fetchWebsite') {
-        const result = await fetchWebsite(request.params.arguments.url);
-        return {
-            content: [
-                {
-                    type: 'text',
-                    text: result
-                }
-            ]
+            ],
+            isError: true
         };
     }
-    throw new Error(`unknown tool: ${request.params.name}`);
 });
 
 const transport = new StdioServerTransport();
