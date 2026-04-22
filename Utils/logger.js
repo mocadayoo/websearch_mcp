@@ -1,5 +1,7 @@
+import fs from 'fs';
+
 function log(message) {
-    console.log('[WEB_MCP] ' + message);
+    return; // cuz mcpserver confuse with stdout
 };
 
 export { log };

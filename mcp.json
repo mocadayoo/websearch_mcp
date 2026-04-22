@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "WEB_MCP": {
-      "command": "node",
+      "command": "/usr/local/bin/node", // its for mac
       "args": [
         "path/websearch_mcp/index.js"
       ]
